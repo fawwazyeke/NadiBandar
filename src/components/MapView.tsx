@@ -23,6 +23,7 @@ export default function MapView({
   const mapRef = useRef<L.Map | null>(null);
   const districtLayerRef = useRef<L.GeoJSON | null>(null);
   const stateBorderRef = useRef<L.Polyline | null>(null);
+  const districtBorderRef = useRef<L.Polyline | null>(null);
 
   const viewLevelRef = useRef<ViewLevel>(viewLevel);
   useEffect(() => { viewLevelRef.current = viewLevel; }, [viewLevel]);
@@ -57,20 +58,46 @@ export default function MapView({
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     mapRef.current = map;
 
-    // State borders pre-computed from districts.geojson — 143 connected chains,
-    // perfectly aligned with the district fill layer.
+    // Coastline silhouette from mask.geojson (stroke only, no fill)
+    fetch('/geojson/mask.geojson').then(r => r.json()).then(data => {
+      if (!mounted) return;
+      L.geoJSON(data, {
+        style: () => ({ fill: false, color: '#4a7fa5', weight: 1.5, opacity: 0.7, interactive: false }),
+        smoothFactor: 1.5,
+      }).addTo(map);
+    });
+
+    // State borders pre-computed from districts.geojson
     fetch('/data/state-borders.json').then(r => r.json()).then((d: { stateBorders: [number,number][][] }) => {
       if (!mounted) return;
       const line = L.polyline(d.stateBorders, {
-        color: '#ffffff', weight: 2.5, opacity: 1, interactive: false,
+        color: '#ffffff', weight: 3, opacity: 1, interactive: false,
+        lineCap: 'round', lineJoin: 'round',
       });
       stateBorderRef.current = line;
-      if (mapRef.current && districtLayerRef.current && mapRef.current.hasLayer(districtLayerRef.current)) {
-        line.addTo(mapRef.current);
+      if (districtLayerRef.current && map.hasLayer(districtLayerRef.current)) {
+        line.addTo(map);
       }
     });
 
-    fetch('/geojson/districts.geojson').then(r => r.json()).then(data => {
+    // District interior borders (precomputed) — only shown in district view at z≥9
+    fetch('/data/district-borders.json').then(r => r.json()).then((d: { districtBorders: [number,number][][] }) => {
+      if (!mounted) return;
+      const line = L.polyline(d.districtBorders, {
+        color: 'rgba(255,255,255,0.5)', weight: 0.8, opacity: 1, interactive: false,
+        lineCap: 'round', lineJoin: 'round',
+      });
+      districtBorderRef.current = line;
+    });
+
+    // Choose resolution tier based on initial zoom (lo for national view)
+    const initialUrl = map.getZoom() <= 7
+      ? '/geojson/districts-lo.geojson'
+      : map.getZoom() <= 10
+      ? '/geojson/districts-mid.geojson'
+      : '/geojson/districts.geojson';
+
+    fetch(initialUrl).then(r => r.json()).then(data => {
       if (!mounted) return;
 
       const layer = L.geoJSON(data, {
@@ -95,6 +122,16 @@ export default function MapView({
                 const s = statesByNameRef.current.get(feature.properties?.state);
                 if (s) onSelectDistrict(s);
                 onViewLevelChange('district');
+                // Zoom to the clicked state's full extent
+                const stateName = feature.properties?.state;
+                let sb: L.LatLngBounds | null = null;
+                districtLayerRef.current?.eachLayer((l: any) => {
+                  if (l.feature?.properties?.state === stateName && l.getBounds) {
+                    const b = l.getBounds();
+                    sb = sb ? (sb as L.LatLngBounds).extend(b) : b;
+                  }
+                });
+                if (sb) map.fitBounds(sb as L.LatLngBounds, { padding: [20, 20], maxZoom: 9 });
               } else {
                 const d = districtsByIdRef.current.get(districtId(feature));
                 onSelectDistrict(d ?? null);
@@ -112,6 +149,87 @@ export default function MapView({
       if (b.isValid()) map.fitBounds(b, { padding: [20, 20] });
     });
 
+    // Swap to higher-res tier when user zooms in past thresholds
+    let currentTier = map.getZoom() <= 7 ? 'lo' : map.getZoom() <= 10 ? 'mid' : 'hi';
+    map.on('zoomend', () => {
+      if (!mounted) return;
+      const z = map.getZoom();
+      const newTier = z <= 7 ? 'lo' : z <= 10 ? 'mid' : 'hi';
+      // Sync district border visibility (show only in district view at z≥9)
+      syncDistrictBorders(map, z);
+
+      if (newTier === currentTier) return;
+      currentTier = newTier;
+
+      const url = newTier === 'lo'
+        ? '/geojson/districts-lo.geojson'
+        : newTier === 'mid'
+        ? '/geojson/districts-mid.geojson'
+        : '/geojson/districts.geojson';
+
+      fetch(url).then(r => r.json()).then(gdata => {
+        if (!mounted || !mapRef.current) return;
+        const old = districtLayerRef.current;
+        const newLayer = L.geoJSON(gdata, {
+          style: f => styleDistrictFnRef.current(f),
+          smoothFactor: 1.5,
+          onEachFeature: (feature, lyr) => {
+            lyr.on({
+              mouseover: (e: L.LeafletMouseEvent) => {
+                e.target.setStyle({ fillOpacity: 0.95 });
+                const item = viewLevelRef.current === 'state'
+                  ? statesByNameRef.current.get(feature.properties?.state)
+                  : districtsByIdRef.current.get(districtId(feature));
+                if (item) onHoverDistrict(item);
+              },
+              mouseout: (e: L.LeafletMouseEvent) => {
+                e.target.setStyle(styleDistrictFnRef.current(feature));
+                onHoverDistrict(null);
+              },
+              click: (e: L.LeafletMouseEvent) => {
+                L.DomEvent.stopPropagation(e);
+                if (viewLevelRef.current === 'state') {
+                  const s = statesByNameRef.current.get(feature.properties?.state);
+                  if (s) onSelectDistrict(s);
+                  onViewLevelChange('district');
+                  const stateName = feature.properties?.state;
+                  let sb: L.LatLngBounds | null = null;
+                  districtLayerRef.current?.eachLayer((l: any) => {
+                    if (l.feature?.properties?.state === stateName && l.getBounds) {
+                      const b = l.getBounds();
+                      sb = sb ? (sb as L.LatLngBounds).extend(b) : b;
+                    }
+                  });
+                  if (sb) map.fitBounds(sb as L.LatLngBounds, { padding: [20, 20], maxZoom: 9 });
+                } else {
+                  const d = districtsByIdRef.current.get(districtId(feature));
+                  onSelectDistrict(d ?? null);
+                  if (e.target.getBounds) map.fitBounds(e.target.getBounds(), { padding: [40, 40], maxZoom: 11 });
+                }
+              },
+            });
+          },
+        });
+        if (old) map.removeLayer(old);
+        districtLayerRef.current = newLayer;
+        newLayer.addTo(map);
+        syncDistrictBorders(map, z);
+        stateBorderRef.current?.bringToFront();
+      });
+    });
+
+    function syncDistrictBorders(m: L.Map, zoom: number) {
+      const layer = districtBorderRef.current;
+      if (!layer) return;
+      const shouldShow = viewLevelRef.current === 'district' && zoom >= 8;
+      if (shouldShow && !m.hasLayer(layer)) {
+        layer.addTo(m);
+        stateBorderRef.current?.bringToFront();
+      } else if (!shouldShow && m.hasLayer(layer)) {
+        m.removeLayer(layer);
+      }
+    }
+
     return () => {
       mounted = false;
       map.remove();
@@ -122,10 +240,19 @@ export default function MapView({
   // Re-style when viewLevel, selectedLayer, or data changes
   useEffect(() => {
     districtLayerRef.current?.setStyle(f => styleDistrictFnRef.current(f));
-    if (stateBorderRef.current && mapRef.current) {
-      if (!mapRef.current.hasLayer(stateBorderRef.current)) {
-        stateBorderRef.current.addTo(mapRef.current);
-      }
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Show/hide district borders based on viewLevel + zoom
+    const dbl = districtBorderRef.current;
+    if (dbl) {
+      const shouldShow = viewLevel === 'district' && map.getZoom() >= 8;
+      if (shouldShow && !map.hasLayer(dbl)) dbl.addTo(map);
+      else if (!shouldShow && map.hasLayer(dbl)) map.removeLayer(dbl);
+    }
+
+    if (stateBorderRef.current) {
+      if (!map.hasLayer(stateBorderRef.current)) stateBorderRef.current.addTo(map);
       stateBorderRef.current.bringToFront();
     }
   }, [viewLevel, selectedLayer, districts]);
@@ -144,6 +271,7 @@ export default function MapView({
         gl.setStyle(styleDistrictFnRef.current(gl.feature));
       }
     });
+    districtBorderRef.current?.bringToFront();
     stateBorderRef.current?.bringToFront();
   }, [selectedDistrict]);
 
@@ -157,13 +285,13 @@ export default function MapView({
       const stateName = feature?.properties?.state;
       const s = statesByNameRef.current.get(stateName);
       const score = s ? getLayerScore(s, selectedLayerRef.current) : 50;
-      // No inner district borders in state view — weight 0 for a clean choropleth
       return { fillColor: scoreColor(score), fillOpacity: 0.85, weight: 0 };
     }
     const id = districtId(feature);
     const d = districtsByIdRef.current.get(id);
     const score = d ? getLayerScore(d, selectedLayerRef.current) : 50;
-    return { fillColor: scoreColor(score), fillOpacity: 0.85, weight: 0.8, color: 'rgba(255,255,255,0.45)', opacity: 1 };
+    // No stroke on fills — borders handled by precomputed districtBorderRef layer
+    return { fillColor: scoreColor(score), fillOpacity: 0.85, weight: 0 };
   }
 
   styleDistrictFnRef.current = styleDistrict;

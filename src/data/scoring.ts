@@ -134,7 +134,7 @@ export function getLayerScore(d: District, layer: LayerId): number {
 export function scoreColor(score: number): string {
   if (score > 120) return '#D85A30'; // coral  — Overdeveloped
   if (score >= 70)  return '#0F6E56'; // teal   — Well-Served
-  if (score >= 35)  return '#F59E0B'; // amber  — Needs Improvement
+  if (score >= 35)  return '#D97706'; // amber-600 — Needs Improvement (contrast 3.19 vs white)
   return '#EF4444';                   // red    — Critical
 }
 
