@@ -1,9 +1,29 @@
 import { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { Map as MapLibre, NavigationControl, LngLatBounds, GeoJSONSource } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import type { District, LayerId, ViewLevel } from '../types';
 import { getLayerScore, scoreColor } from '../data/scoring';
 import { aggregateByState } from '../data/aggregateByState';
+
+// GADM NAME_1 (no spaces) → our state name
+const GADM_TO_STATE: Record<string, string> = {
+  'Johor': 'Johor',
+  'Kedah': 'Kedah',
+  'Kelantan': 'Kelantan',
+  'KualaLumpur': 'W.P. Kuala Lumpur',
+  'Labuan': 'W.P. Labuan',
+  'Melaka': 'Melaka',
+  'NegeriSembilan': 'Negeri Sembilan',
+  'Pahang': 'Pahang',
+  'Perak': 'Perak',
+  'Perlis': 'Perlis',
+  'PulauPinang': 'Pulau Pinang',
+  'Putrajaya': 'W.P. Putrajaya',
+  'Sabah': 'Sabah',
+  'Sarawak': 'Sarawak',
+  'Selangor': 'Selangor',
+  'Trengganu': 'Terengganu',
+};
 
 interface Props {
   districts: District[];
@@ -16,21 +36,26 @@ interface Props {
 }
 
 export default function MapView({
-  districts, selectedLayer, viewLevel, onViewLevelChange,
-  selectedDistrict, onSelectDistrict, onHoverDistrict,
+  districts, selectedLayer, viewLevel,
+  onViewLevelChange, onSelectDistrict, onHoverDistrict,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const districtLayerRef = useRef<L.GeoJSON | null>(null);
-  const stateBorderRef = useRef<L.Polyline | null>(null);
-  const districtBorderRef = useRef<L.Polyline | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const gadmDataRef = useRef<any>(null);
+  const mappingRef = useRef<Record<string, string>>({});
 
+  // Keep refs current so map event handlers see latest values
   const viewLevelRef = useRef<ViewLevel>(viewLevel);
   useEffect(() => { viewLevelRef.current = viewLevel; }, [viewLevel]);
   const selectedLayerRef = useRef<LayerId>(selectedLayer);
   useEffect(() => { selectedLayerRef.current = selectedLayer; }, [selectedLayer]);
+  const onSelectRef = useRef(onSelectDistrict);
+  useEffect(() => { onSelectRef.current = onSelectDistrict; }, [onSelectDistrict]);
+  const onHoverRef = useRef(onHoverDistrict);
+  useEffect(() => { onHoverRef.current = onHoverDistrict; }, [onHoverDistrict]);
+  const onViewRef = useRef(onViewLevelChange);
+  useEffect(() => { onViewRef.current = onViewLevelChange; }, [onViewLevelChange]);
 
-  const styleDistrictFnRef = useRef<(f: any) => L.PathOptions>(() => ({}));
   const districtsByIdRef = useRef<Map<string, District>>(new Map());
   const statesByNameRef = useRef<Map<string, District>>(new Map());
 
@@ -43,191 +68,208 @@ export default function MapView({
     statesByNameRef.current = byState;
   }, [districts]);
 
+  // Stamp __color onto each GADM feature then push to the map source
+  function pushColors() {
+    const map = mapRef.current;
+    const data = gadmDataRef.current;
+    if (!map || !data || !map.getSource('districts')) return;
+
+    const vl = viewLevelRef.current;
+    const layer = selectedLayerRef.current;
+
+    for (const f of data.features) {
+      const gid: string = f.properties.GID_2;
+      const stateName: string = GADM_TO_STATE[f.properties.NAME_1] ?? f.properties.NAME_1;
+      let color = '#9ca3af'; // gray for unmatched districts
+
+      if (vl === 'state') {
+        const agg = statesByNameRef.current.get(stateName);
+        color = scoreColor(agg ? getLayerScore(agg, layer) : 50);
+      } else {
+        const did = mappingRef.current[gid];
+        const d = did ? districtsByIdRef.current.get(did) : null;
+        if (d) color = scoreColor(getLayerScore(d, layer));
+      }
+      f.properties.__color = color;
+    }
+
+    (map.getSource('districts') as GeoJSONSource).setData(data);
+  }
+
+  // One-time map init
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     let mounted = true;
-    containerRef.current.style.background = '#b8cfe8';
 
-    const map = L.map(containerRef.current, {
-      zoomControl: false,
-      minZoom: 4, maxZoom: 16,
-      maxBounds: [[0.5, 98.5], [8.0, 120.5]],
-      maxBoundsViscosity: 1.0,
+    const map = new MapLibre({
+      container: containerRef.current,
+      style: {
+        version: 8,
+        sources: {},
+        layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#b8cfe8' } }],
+        glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+      },
+      center: [109.5, 4.2],
+      zoom: 5,
+      minZoom: 4,
+      maxZoom: 16,
     });
-    map.setView([4.2, 109.5], 6);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    map.addControl(new NavigationControl({ showCompass: false }), 'bottom-right');
     mapRef.current = map;
 
-    // Coastline silhouette from mask.geojson (stroke only, no fill)
-    fetch('/geojson/mask.geojson').then(r => r.json()).then(data => {
+    const onMapLoad = async () => {
       if (!mounted) return;
-      L.geoJSON(data, {
-        style: () => ({ fill: false, color: '#4a7fa5', weight: 1.5, opacity: 0.7, interactive: false }),
-        smoothFactor: 1.5,
-      }).addTo(map);
-    });
 
-    // State borders pre-computed from districts.geojson
-    fetch('/data/state-borders.json').then(r => r.json()).then((d: { stateBorders: [number,number][][] }) => {
+      const [gadmData, mapping] = await Promise.all([
+        fetch('/geojson/gadm_mys_2.geojson').then(r => r.json()),
+        fetch('/data/gadm-mapping.json').then(r => r.json()),
+      ]);
       if (!mounted) return;
-      const line = L.polyline(d.stateBorders, {
-        color: '#ffffff', weight: 3, opacity: 1, interactive: false,
-        lineCap: 'round', lineJoin: 'round',
-      });
-      stateBorderRef.current = line;
-      if (districtLayerRef.current && map.hasLayer(districtLayerRef.current)) {
-        line.addTo(map);
+
+      gadmDataRef.current = gadmData;
+      mappingRef.current = mapping;
+
+      // Stamp initial colors
+      const vl = viewLevelRef.current;
+      const layer = selectedLayerRef.current;
+      for (const f of gadmData.features) {
+        const gid: string = f.properties.GID_2;
+        const stateName: string = GADM_TO_STATE[f.properties.NAME_1] ?? f.properties.NAME_1;
+        let color = '#9ca3af';
+        if (vl === 'state') {
+          const agg = statesByNameRef.current.get(stateName);
+          color = scoreColor(agg ? getLayerScore(agg, layer) : 50);
+        } else {
+          const did = mapping[gid];
+          const d = did ? districtsByIdRef.current.get(did) : null;
+          if (d) color = scoreColor(getLayerScore(d, layer));
+        }
+        f.properties.__color = color;
       }
-    });
 
-    // District interior borders (precomputed) — only shown in district view at z≥9
-    fetch('/data/district-borders.json').then(r => r.json()).then((d: { districtBorders: [number,number][][] }) => {
-      if (!mounted) return;
-      const line = L.polyline(d.districtBorders, {
-        color: 'rgba(255,255,255,0.5)', weight: 0.8, opacity: 1, interactive: false,
-        lineCap: 'round', lineJoin: 'round',
-      });
-      districtBorderRef.current = line;
-    });
+      map.addSource('districts', { type: 'geojson', data: gadmData });
 
-    // Choose resolution tier based on initial zoom (lo for national view)
-    const initialUrl = map.getZoom() <= 7
-      ? '/geojson/districts-lo.geojson'
-      : map.getZoom() <= 10
-      ? '/geojson/districts-mid.geojson'
-      : '/geojson/districts.geojson';
-
-    fetch(initialUrl).then(r => r.json()).then(data => {
-      if (!mounted) return;
-
-      const layer = L.geoJSON(data, {
-        style: f => styleDistrictFnRef.current(f),
-        smoothFactor: 1.5,
-        onEachFeature: (feature, lyr) => {
-          lyr.on({
-            mouseover: (e: L.LeafletMouseEvent) => {
-              e.target.setStyle({ fillOpacity: 0.95 });
-              const item = viewLevelRef.current === 'state'
-                ? statesByNameRef.current.get(feature.properties?.state)
-                : districtsByIdRef.current.get(districtId(feature));
-              if (item) onHoverDistrict(item);
-            },
-            mouseout: (e: L.LeafletMouseEvent) => {
-              e.target.setStyle(styleDistrictFnRef.current(feature));
-              onHoverDistrict(null);
-            },
-            click: (e: L.LeafletMouseEvent) => {
-              L.DomEvent.stopPropagation(e);
-              if (viewLevelRef.current === 'state') {
-                const s = statesByNameRef.current.get(feature.properties?.state);
-                if (s) onSelectDistrict(s);
-                onViewLevelChange('district');
-                // Zoom to the clicked state's full extent
-                const stateName = feature.properties?.state;
-                let sb: L.LatLngBounds | null = null;
-                districtLayerRef.current?.eachLayer((l: any) => {
-                  if (l.feature?.properties?.state === stateName && l.getBounds) {
-                    const b = l.getBounds();
-                    sb = sb ? (sb as L.LatLngBounds).extend(b) : b;
-                  }
-                });
-                if (sb) map.fitBounds(sb as L.LatLngBounds, { padding: [20, 20], maxZoom: 9 });
-              } else {
-                const d = districtsByIdRef.current.get(districtId(feature));
-                onSelectDistrict(d ?? null);
-                if (e.target.getBounds) map.fitBounds(e.target.getBounds(), { padding: [40, 40], maxZoom: 11 });
-              }
-            },
-          });
+      // Fill
+      map.addLayer({
+        id: 'district-fills',
+        type: 'fill',
+        source: 'districts',
+        paint: {
+          'fill-color': ['get', '__color'],
+          'fill-opacity': 0.85,
         },
       });
 
-      districtLayerRef.current = layer;
-      layer.addTo(map);
-      if (stateBorderRef.current) stateBorderRef.current.addTo(map);
-      const b = layer.getBounds();
-      if (b.isValid()) map.fitBounds(b, { padding: [20, 20] });
-    });
-
-    // Swap to higher-res tier when user zooms in past thresholds
-    let currentTier = map.getZoom() <= 7 ? 'lo' : map.getZoom() <= 10 ? 'mid' : 'hi';
-    map.on('zoomend', () => {
-      if (!mounted) return;
-      const z = map.getZoom();
-      const newTier = z <= 7 ? 'lo' : z <= 10 ? 'mid' : 'hi';
-      // Sync district border visibility (show only in district view at z≥9)
-      syncDistrictBorders(map, z);
-
-      if (newTier === currentTier) return;
-      currentTier = newTier;
-
-      const url = newTier === 'lo'
-        ? '/geojson/districts-lo.geojson'
-        : newTier === 'mid'
-        ? '/geojson/districts-mid.geojson'
-        : '/geojson/districts.geojson';
-
-      fetch(url).then(r => r.json()).then(gdata => {
-        if (!mounted || !mapRef.current) return;
-        const old = districtLayerRef.current;
-        const newLayer = L.geoJSON(gdata, {
-          style: f => styleDistrictFnRef.current(f),
-          smoothFactor: 1.5,
-          onEachFeature: (feature, lyr) => {
-            lyr.on({
-              mouseover: (e: L.LeafletMouseEvent) => {
-                e.target.setStyle({ fillOpacity: 0.95 });
-                const item = viewLevelRef.current === 'state'
-                  ? statesByNameRef.current.get(feature.properties?.state)
-                  : districtsByIdRef.current.get(districtId(feature));
-                if (item) onHoverDistrict(item);
-              },
-              mouseout: (e: L.LeafletMouseEvent) => {
-                e.target.setStyle(styleDistrictFnRef.current(feature));
-                onHoverDistrict(null);
-              },
-              click: (e: L.LeafletMouseEvent) => {
-                L.DomEvent.stopPropagation(e);
-                if (viewLevelRef.current === 'state') {
-                  const s = statesByNameRef.current.get(feature.properties?.state);
-                  if (s) onSelectDistrict(s);
-                  onViewLevelChange('district');
-                  const stateName = feature.properties?.state;
-                  let sb: L.LatLngBounds | null = null;
-                  districtLayerRef.current?.eachLayer((l: any) => {
-                    if (l.feature?.properties?.state === stateName && l.getBounds) {
-                      const b = l.getBounds();
-                      sb = sb ? (sb as L.LatLngBounds).extend(b) : b;
-                    }
-                  });
-                  if (sb) map.fitBounds(sb as L.LatLngBounds, { padding: [20, 20], maxZoom: 9 });
-                } else {
-                  const d = districtsByIdRef.current.get(districtId(feature));
-                  onSelectDistrict(d ?? null);
-                  if (e.target.getBounds) map.fitBounds(e.target.getBounds(), { padding: [40, 40], maxZoom: 11 });
-                }
-              },
-            });
-          },
-        });
-        if (old) map.removeLayer(old);
-        districtLayerRef.current = newLayer;
-        newLayer.addTo(map);
-        syncDistrictBorders(map, z);
-        stateBorderRef.current?.bringToFront();
+      // District border — thin white line, thickens on zoom
+      map.addLayer({
+        id: 'district-lines',
+        type: 'line',
+        source: 'districts',
+        paint: {
+          'line-color': 'rgba(255,255,255,0.55)',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.4, 9, 1, 13, 1.5],
+        },
       });
-    });
 
-    function syncDistrictBorders(m: L.Map, zoom: number) {
-      const layer = districtBorderRef.current;
-      if (!layer) return;
-      const shouldShow = viewLevelRef.current === 'district' && zoom >= 8;
-      if (shouldShow && !m.hasLayer(layer)) {
-        layer.addTo(m);
-        stateBorderRef.current?.bringToFront();
-      } else if (!shouldShow && m.hasLayer(layer)) {
-        m.removeLayer(layer);
+      // State borders (precomputed chains, stored as [lat,lng] → convert to [lng,lat])
+      const sbData = await fetch('/data/state-borders.json').then(r => r.json());
+      if (!mounted) return;
+      const stateBorderGeoJSON: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: sbData.stateBorders.map((chain: [number, number][]) => ({
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: chain.map(([lat, lng]: [number, number]) => [lng, lat]),
+          },
+        })),
+      };
+      map.addSource('state-borders', { type: 'geojson', data: stateBorderGeoJSON });
+      map.addLayer({
+        id: 'state-border-lines',
+        type: 'line',
+        source: 'state-borders',
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 5, 2, 10, 3.5],
+          'line-opacity': 1,
+        },
+      });
+
+      // Fit to Malaysia
+      const bounds = new LngLatBounds();
+      for (const f of gadmData.features) {
+        const rings: number[][][] = f.geometry.type === 'Polygon'
+          ? f.geometry.coordinates
+          : f.geometry.coordinates.flat(1);
+        for (const ring of rings)
+          for (const [lng, lat] of ring) bounds.extend([lng, lat]);
       }
+      map.fitBounds(bounds, { padding: 20, duration: 0 });
+
+      // Click
+      map.on('click', 'district-fills', e => {
+        if (!e.features?.length) return;
+        const props = e.features[0].properties as any;
+        const gid: string = props.GID_2;
+        const stateName: string = GADM_TO_STATE[props.NAME_1] ?? props.NAME_1;
+
+        if (viewLevelRef.current === 'state') {
+          const agg = statesByNameRef.current.get(stateName);
+          if (agg) onSelectRef.current(agg);
+          onViewRef.current('district');
+
+          // Zoom to state
+          const sb = new LngLatBounds();
+          for (const feat of gadmData.features) {
+            if ((GADM_TO_STATE[feat.properties.NAME_1] ?? feat.properties.NAME_1) !== stateName) continue;
+            const rings: number[][][] = feat.geometry.type === 'Polygon'
+              ? feat.geometry.coordinates
+              : feat.geometry.coordinates.flat(1);
+            for (const ring of rings)
+              for (const [lng, lat] of ring) sb.extend([lng, lat]);
+          }
+          if (!sb.isEmpty()) map.fitBounds(sb, { padding: 20, maxZoom: 9 });
+        } else {
+          const did = mapping[gid];
+          onSelectRef.current(did ? (districtsByIdRef.current.get(did) ?? null) : null);
+
+          // Zoom to feature
+          const fb = new LngLatBounds();
+          const geom = e.features[0].geometry as any;
+          const rings: number[][][] = geom.type === 'Polygon'
+            ? geom.coordinates
+            : geom.coordinates.flat(1);
+          for (const ring of rings)
+            for (const [lng, lat] of ring) fb.extend([lng, lat]);
+          if (!fb.isEmpty()) map.fitBounds(fb, { padding: 40, maxZoom: 11 });
+        }
+      });
+
+      // Hover
+      map.on('mouseenter', 'district-fills', e => {
+        map.getCanvas().style.cursor = 'pointer';
+        if (!e.features?.length) return;
+        const props = e.features[0].properties as any;
+        const gid: string = props.GID_2;
+        const stateName: string = GADM_TO_STATE[props.NAME_1] ?? props.NAME_1;
+        const item = viewLevelRef.current === 'state'
+          ? statesByNameRef.current.get(stateName)
+          : (mappingRef.current[gid] ? districtsByIdRef.current.get(mappingRef.current[gid]) : null);
+        onHoverRef.current(item ?? null);
+      });
+
+      map.on('mouseleave', 'district-fills', () => {
+        map.getCanvas().style.cursor = '';
+        onHoverRef.current(null);
+      });
+    };
+
+    if (map.isStyleLoaded()) {
+      onMapLoad();
+    } else {
+      map.once('load', onMapLoad);
     }
 
     return () => {
@@ -237,69 +279,14 @@ export default function MapView({
     };
   }, []);
 
-  // Re-style when viewLevel, selectedLayer, or data changes
+  // Re-color whenever view level, layer, or data changes
   useEffect(() => {
-    districtLayerRef.current?.setStyle(f => styleDistrictFnRef.current(f));
-    const map = mapRef.current;
-    if (!map) return;
-
-    // Show/hide district borders based on viewLevel + zoom
-    const dbl = districtBorderRef.current;
-    if (dbl) {
-      const shouldShow = viewLevel === 'district' && map.getZoom() >= 8;
-      if (shouldShow && !map.hasLayer(dbl)) dbl.addTo(map);
-      else if (!shouldShow && map.hasLayer(dbl)) map.removeLayer(dbl);
-    }
-
-    if (stateBorderRef.current) {
-      if (!map.hasLayer(stateBorderRef.current)) stateBorderRef.current.addTo(map);
-      stateBorderRef.current.bringToFront();
-    }
+    pushColors();
   }, [viewLevel, selectedLayer, districts]);
 
-  // Highlight selected district in district view
-  useEffect(() => {
-    if (viewLevel !== 'district') return;
-    districtLayerRef.current?.eachLayer((lyr: L.Layer) => {
-      const gl = lyr as any;
-      if (!gl.feature) return;
-      const id = districtId(gl.feature);
-      if (id === selectedDistrict?.id) {
-        gl.setStyle({ fillOpacity: 0.95 });
-        gl.bringToFront();
-      } else {
-        gl.setStyle(styleDistrictFnRef.current(gl.feature));
-      }
-    });
-    districtBorderRef.current?.bringToFront();
-    stateBorderRef.current?.bringToFront();
-  }, [selectedDistrict]);
-
-  function districtId(feature: any): string {
-    const p = feature?.properties || {};
-    return `${p.state || ''}|${p.district || p.name || ''}`;
-  }
-
-  function styleDistrict(feature: any): L.PathOptions {
-    if (viewLevelRef.current === 'state') {
-      const stateName = feature?.properties?.state;
-      const s = statesByNameRef.current.get(stateName);
-      const score = s ? getLayerScore(s, selectedLayerRef.current) : 50;
-      return { fillColor: scoreColor(score), fillOpacity: 0.85, weight: 0 };
-    }
-    const id = districtId(feature);
-    const d = districtsByIdRef.current.get(id);
-    const score = d ? getLayerScore(d, selectedLayerRef.current) : 50;
-    // No stroke on fills — borders handled by precomputed districtBorderRef layer
-    return { fillColor: scoreColor(score), fillOpacity: 0.85, weight: 0 };
-  }
-
-  styleDistrictFnRef.current = styleDistrict;
-
   return (
-    <div style={{ position: 'absolute', inset: 0, background: '#b8cfe8' }}>
+    <div style={{ position: 'absolute', inset: 0 }}>
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
-      <style>{`.leaflet-container { background: #b8cfe8 !important; }`}</style>
     </div>
   );
 }
