@@ -54,7 +54,8 @@ export default function ChatPanel({ districts, selectedLayer, initialMessage, on
         layer: selectedLayer,
       };
 
-      const resp = await fetch('/api/chat', {
+      const API_BASE = import.meta.env.VITE_API_URL ?? '';
+      const resp = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -83,7 +84,6 @@ export default function ChatPanel({ districts, selectedLayer, initialMessage, on
       : /school|educat/.test(lower) ? 'schools'
       : /police|crime/.test(lower) ? 'police'
       : /market|pasar/.test(lower) ? 'markets'
-      : /pharmacy|pharmac/.test(lower) ? 'pharmacies'
       : /transport|bus|train/.test(lower) ? 'transport'
       : null;
 

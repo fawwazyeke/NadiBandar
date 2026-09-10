@@ -37,12 +37,15 @@ interface Props {
 
 export default function MapView({
   districts, selectedLayer, viewLevel,
-  onViewLevelChange, onSelectDistrict, onHoverDistrict,
+  onViewLevelChange, selectedDistrict, onSelectDistrict, onHoverDistrict,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
+  const mapRef = useRef<MapLibre | null>(null);
   const gadmDataRef = useRef<any>(null);
   const mappingRef = useRef<Record<string, string>>({});
+  const reverseMappingRef = useRef<Record<string, string>>({}); // district id → GID_2
+  const selectedDistrictRef = useRef<District | null>(selectedDistrict);
+  useEffect(() => { selectedDistrictRef.current = selectedDistrict; }, [selectedDistrict]);
 
   // Keep refs current so map event handlers see latest values
   const viewLevelRef = useRef<ViewLevel>(viewLevel);
@@ -103,22 +106,19 @@ export default function MapView({
 
     const map = new MapLibre({
       container: containerRef.current,
-      style: {
-        version: 8,
-        sources: {},
-        layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#b8cfe8' } }],
-        glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-      },
+      style: { version: 8, sources: {}, layers: [] },
       center: [109.5, 4.2],
       zoom: 5,
       minZoom: 4,
       maxZoom: 16,
     });
     map.addControl(new NavigationControl({ showCompass: false }), 'bottom-right');
+    map.on('error', e => console.error('[MapLibre]', e.error));
     mapRef.current = map;
 
     const onMapLoad = async () => {
       if (!mounted) return;
+      try {
 
       const [gadmData, mapping] = await Promise.all([
         fetch('/geojson/gadm_mys_2.geojson').then(r => r.json()),
@@ -128,6 +128,12 @@ export default function MapView({
 
       gadmDataRef.current = gadmData;
       mappingRef.current = mapping;
+      const rev: Record<string, string> = {};
+      for (const [gid, did] of Object.entries(mapping)) rev[did as string] = gid;
+      reverseMappingRef.current = rev;
+
+      // Background (sea color)
+      map.addLayer({ id: 'bg', type: 'background', paint: { 'background-color': '#b8cfe8' } });
 
       // Stamp initial colors
       const vl = viewLevelRef.current;
@@ -171,28 +177,22 @@ export default function MapView({
         },
       });
 
-      // State borders (precomputed chains, stored as [lat,lng] → convert to [lng,lat])
-      const sbData = await fetch('/data/state-borders.json').then(r => r.json());
-      if (!mounted) return;
-      const stateBorderGeoJSON: GeoJSON.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: sbData.stateBorders.map((chain: [number, number][]) => ({
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: chain.map(([lat, lng]: [number, number]) => [lng, lat]),
-          },
-        })),
-      };
-      map.addSource('state-borders', { type: 'geojson', data: stateBorderGeoJSON });
+      // Selected district highlight — panel white fill + solid border
       map.addLayer({
-        id: 'state-border-lines',
+        id: 'district-selected-fill',
+        type: 'fill',
+        source: 'districts',
+        filter: ['==', ['get', 'GID_2'], ''],
+        paint: { 'fill-color': 'rgba(255,255,255,0.92)', 'fill-opacity': 1 },
+      });
+      map.addLayer({
+        id: 'district-selected-line',
         type: 'line',
-        source: 'state-borders',
+        source: 'districts',
+        filter: ['==', ['get', 'GID_2'], ''],
         paint: {
           'line-color': '#ffffff',
-          'line-width': ['interpolate', ['linear'], ['zoom'], 5, 2, 10, 3.5],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 6, 2, 12, 3],
           'line-opacity': 1,
         },
       });
@@ -243,12 +243,12 @@ export default function MapView({
             : geom.coordinates.flat(1);
           for (const ring of rings)
             for (const [lng, lat] of ring) fb.extend([lng, lat]);
-          if (!fb.isEmpty()) map.fitBounds(fb, { padding: 40, maxZoom: 11 });
+          if (!fb.isEmpty()) map.fitBounds(fb, { padding: 40, maxZoom: 8 });
         }
       });
 
-      // Hover
-      map.on('mouseenter', 'district-fills', e => {
+      // Hover — use mousemove so adjacent districts update without a gap
+      map.on('mousemove', 'district-fills', e => {
         map.getCanvas().style.cursor = 'pointer';
         if (!e.features?.length) return;
         const props = e.features[0].properties as any;
@@ -264,6 +264,9 @@ export default function MapView({
         map.getCanvas().style.cursor = '';
         onHoverRef.current(null);
       });
+      } catch (err) {
+        console.error('[MapView] onMapLoad error:', err);
+      }
     };
 
     if (map.isStyleLoaded()) {
@@ -283,6 +286,16 @@ export default function MapView({
   useEffect(() => {
     pushColors();
   }, [viewLevel, selectedLayer, districts]);
+
+  // Highlight selected district on the map
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.getLayer('district-selected-fill')) return;
+    const gid = selectedDistrict ? (reverseMappingRef.current[selectedDistrict.id] ?? '') : '';
+    const filter: any = ['==', ['get', 'GID_2'], gid];
+    map.setFilter('district-selected-fill', filter);
+    map.setFilter('district-selected-line', filter);
+  }, [selectedDistrict]);
 
   return (
     <div style={{ position: 'absolute', inset: 0 }}>

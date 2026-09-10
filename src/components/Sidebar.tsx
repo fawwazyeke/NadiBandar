@@ -23,7 +23,6 @@ export default function Sidebar({
     { label: 'Schools',             score: scores.schools.score,   raw: `${selectedDistrict.schools} facilities`,  gap: scores.schools.gap },
     { label: 'Police Stations',     score: scores.police.score,    raw: `${selectedDistrict.police} stations`,     gap: scores.police.gap },
     { label: 'Markets',             score: scores.markets.score,   raw: `${selectedDistrict.markets} markets`,     gap: scores.markets.gap },
-    { label: 'Pharmacies',          score: scores.pharmacies.score, raw: `${selectedDistrict.pharmacies}`,         gap: scores.pharmacies.gap },
     { label: 'Transit Stops',       score: scores.transport.score,  raw: `${selectedDistrict.transport_stops}`,    gap: scores.transport.gap },
     { label: 'Poverty Index',       score: scores.poverty.score,    raw: scores.poverty.label, gap: 0 },
   ] : [];
@@ -148,13 +147,23 @@ export default function Sidebar({
           </div>
 
         ) : (
-          <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" style={{ marginBottom: 10 }}>
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-            </svg>
-            <div style={{ color: '#94a3b8', fontSize: 12.5, lineHeight: 1.7 }}>
+          <div style={{ padding: '20px 14px', textAlign: 'center' }}>
+            <div style={{ color: '#94a3b8', fontSize: 12.5, lineHeight: 1.7, marginBottom: 16 }}>
               Click any {viewLevel} on<br/>the map to view analysis
             </div>
+            <button
+              onClick={() => onAskAbout(
+                'Analyze all 160 Malaysian districts and list the top 5 most critical facility gaps that need immediate government intervention. For each, name the district, the specific gap, how many facilities are missing, and the recommended action. Rank by severity and impact on residents.'
+              )}
+              style={{
+                width: '100%', padding: '9px 12px',
+                background: '#0d9488',
+                color: '#fff', border: 'none', borderRadius: 8,
+                fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              Analyze All Districts
+            </button>
           </div>
         )}
       </div>

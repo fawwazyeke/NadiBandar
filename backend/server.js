@@ -37,10 +37,14 @@ for (const d of DISTRICTS) {
 
 function findMentionedDistricts(query) {
   const q = query.toLowerCase();
+  const qWords = q.split(/\W+/);
   const seen = new Set();
   const found = [];
   for (const [key, d] of DISTRICT_INDEX) {
-    if (q.includes(key) && !seen.has(d.id)) {
+    // Multi-word keys (e.g. "johor bahru"): substring match is fine
+    // Single-word keys (e.g. "port"): must be a whole word to avoid "port" matching inside "transport"
+    const matches = key.includes(' ') ? q.includes(key) : qWords.includes(key);
+    if (matches && !seen.has(d.id)) {
       seen.add(d.id);
       found.push(d);
     }
@@ -135,12 +139,15 @@ Planning standards (PLANMalaysia JPBD GP004-A 2022 + WHO):
 - Schools           : 1 per 5,000 residents
 - Police stations   : 1 per 10,000 residents
 - Markets           : 1 per 10,000 residents
-- Pharmacies        : 1 per 2,000 residents (WHO/MOH 2022)
 - Transit stops     : 1 per 5,000 residents
 
 A score above 100 means over-served (excess provision). Below 100 means a gap exists.
 
-When district data is provided below, always use those exact numbers. Keep replies under 200 words. Be specific — name districts, give actual counts and gaps. Recommend concrete, actionable interventions. When you use web_search, cite the source at the end of your reply.`;
+When district data is provided below, always use those exact numbers. Keep replies under 200 words. Be specific — name districts, give actual counts and gaps. Recommend concrete, actionable interventions. When you use web_search, cite the source at the end of your reply.
+
+Important: When a user asks ANY question that mentions a facility type (hospitals, clinics, schools, police, markets, transport, public transport, etc.) — even if phrased as "where do we get the data", "how is X measured", or "tell me about X" — always answer by analysing the actual district data provided. Do not give generic background information. Instead, highlight which districts are worst-served, what the gaps are, and what action is needed. The district dataset IS the authoritative source; refer to it directly.
+
+Formatting rules: never use LaTeX or mathematical notation (no \\frac, \\text, [ ] formula blocks). Write formulas in plain English, e.g. "Score = (existing / required) × 100".`;
 
 // ── Serper.dev web search ───────────────────────────────────────────
 async function serperSearch(query) {
@@ -182,7 +189,7 @@ const WEB_SEARCH_TOOL = {
 
 // ── Express app ─────────────────────────────────────────────────────
 const app = express();
-app.use(cors());
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : '*' }));
 app.use(express.json({ limit: '2mb' }));
 
 app.post('/api/chat', async (req, res) => {
@@ -213,6 +220,12 @@ app.post('/api/chat', async (req, res) => {
     }
     if (layer) {
       systemContent += `\n\nThe user is currently viewing the "${layer}" map layer.`;
+    }
+
+    // For data-sourcing questions, tell the model to briefly explain provenance then show real numbers
+    const isMetaQuery = /where.*(get|find|obtain|from|source|come)|source of|data source|how.*(measure|calculat|score|work)/i.test(query);
+    if (isMetaQuery && mentioned.length > 0) {
+      systemContent += `\n\nNOTE: The user is asking where the data comes from. Answer in 2-3 sentences: the transport stop counts come from OpenStreetMap (OSM) community mapping, cross-referenced with DOSM Census 2020 population data. Then immediately show 2-3 example districts from the data provided above to illustrate what the dataset looks like. Do not list government agencies or external links.`;
     }
 
     const oaiMessages = [{ role: 'system', content: systemContent }, ...messages];

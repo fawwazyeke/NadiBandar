@@ -49,7 +49,6 @@ export type LayerId =
   | 'schools'
   | 'police'
   | 'markets'
-  | 'pharmacies'
   | 'transport'
   | 'poverty'
   | 'density'
@@ -77,7 +76,6 @@ export interface DistrictScores {
   schools: GapScore;
   police: GapScore;
   markets: GapScore;
-  pharmacies: GapScore;
   transport: GapScore;
   poverty: GapScore;
   income: GapScore;

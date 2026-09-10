@@ -11,7 +11,7 @@ export const STANDARDS = {
   // JPBD GP004-A 2022: Category V community health clinic — 1 per 10,000 pop.
   // Consistent with WHO primary healthcare accessibility guidelines.
   // (Previous value of 1:60,000 was a hospital-level standard, not clinic-level.)
-  hospitals:  { per: 10_000,  label: '1 per 10k pop',   weight: 0.25 },
+  hospitals:  { per: 10_000,  label: '1 per 10k pop',   weight: 0.35 },
 
   // JPBD GP004-A 2022: 1 primary school per 5,000 pop; 1 secondary per 10,000.
   // Using 5,000 as the combined school standard (primary dominates by count).
@@ -27,11 +27,6 @@ export const STANDARDS = {
   // Using 10,000 as the standard (no binding international per-market ratio exists).
   markets:    { per: 10_000,  label: '1 per 10k pop',   weight: 0.15 },
 
-  // WHO optimum: 1 pharmacist per 2,000 population (5 per 10,000).
-  // Malaysia achieved this nationally by December 2022 (21,760 licensed pharmacists).
-  // Ref: WHO GHO Pharmacists indicator; AIPharm Malaysia Community Pharmacies Report 2022.
-  // FIP global mean: 6 pharmacists per 10,000 pop (FIP WPD 2025 Factsheet).
-  pharmacies: { per: 2_000,   label: '1 per 2k pop',    weight: 0.10 },
 
   // No direct Malaysian standard for stop count per population.
   // Retained as proxy; true standard is 400 m walkability radius (APAD/FHWA/NACTO).
@@ -63,7 +58,6 @@ export function scoreDistrict(d: District): DistrictScores {
   const schools    = facilityScore(d.schools,         pop, STANDARDS.schools.per);
   const police     = facilityScore(d.police,          pop, STANDARDS.police.per);
   const markets    = facilityScore(d.markets,         pop, STANDARDS.markets.per);
-  const pharmacies = facilityScore(d.pharmacies,      pop, STANDARDS.pharmacies.per);
   const transport  = facilityScore(d.transport_stops, pop, STANDARDS.transport.per);
 
   // Poverty: invert scale — lower rate = higher score.
@@ -96,11 +90,10 @@ export function scoreDistrict(d: District): DistrictScores {
     cap(schools.score)    * STANDARDS.schools.weight    +
     cap(police.score)     * STANDARDS.police.weight     +
     cap(markets.score)    * STANDARDS.markets.weight    +
-    cap(pharmacies.score) * STANDARDS.pharmacies.weight +
     cap(transport.score)  * STANDARDS.transport.weight
   );
 
-  return { hospitals, schools, police, markets, pharmacies, transport, poverty, income, composite };
+  return { hospitals, schools, police, markets, transport, poverty, income, composite };
 }
 
 export function getLayerScore(d: District, layer: LayerId): number {
@@ -110,7 +103,6 @@ export function getLayerScore(d: District, layer: LayerId): number {
     schools:    s.schools.score,
     police:     s.police.score,
     markets:    s.markets.score,
-    pharmacies: s.pharmacies.score,
     transport:  s.transport.score,
     poverty:    s.poverty.score,
     // Saturation at 10,000/km² — KL urban core ~7,200/km² per DOSM Census 2020.
@@ -132,8 +124,8 @@ export function getLayerScore(d: District, layer: LayerId): number {
 
 // 4-tier semantic scale. Thresholds vs JPBD GP004-A 2022 provision standards.
 export function scoreColor(score: number): string {
-  if (score > 120) return '#D85A30'; // coral  — Overdeveloped
-  if (score >= 70)  return '#0F6E56'; // teal   — Well-Served
+  if (score > 120) return '#06B6D4'; // cyan-500 (turquoise) — Overdeveloped
+  if (score >= 70)  return '#0F6E56'; // teal-800 — Well-Served
   if (score >= 35)  return '#D97706'; // amber-600 — Needs Improvement (contrast 3.19 vs white)
   return '#EF4444';                   // red    — Critical
 }
@@ -145,7 +137,6 @@ export function gapSummary(d: District): string {
     { label: 'schools',         gap: s.schools.gap,    score: s.schools.score,    raw: s.schools.raw },
     { label: 'police stations', gap: s.police.gap,     score: s.police.score,     raw: s.police.raw },
     { label: 'markets',         gap: s.markets.gap,    score: s.markets.score,    raw: s.markets.raw },
-    { label: 'pharmacies',      gap: s.pharmacies.gap, score: s.pharmacies.score, raw: s.pharmacies.raw },
     { label: 'transit stops',   gap: s.transport.gap,  score: s.transport.score,  raw: s.transport.raw },
   ];
   const critical   = rows.filter(r => r.score < 40).sort((a, b) => a.score - b.score);

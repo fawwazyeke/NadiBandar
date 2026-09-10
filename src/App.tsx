@@ -58,7 +58,7 @@ export default function App() {
             {/* View level toggle */}
             <div style={{
               background: 'rgba(255,255,255,0.96)', border: '1px solid #e2e8f0',
-              borderRadius: 8, padding: 3, display: 'flex', gap: 2,
+              borderRadius: 8, padding: 3, display: 'flex',
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             }}>
               {VIEW_LEVELS.map(level => (
@@ -66,8 +66,8 @@ export default function App() {
                   key={level}
                   onClick={() => handleViewLevel(level)}
                   style={{
-                    padding: '4px 10px', border: 'none', borderRadius: 6, cursor: 'pointer',
-                    fontSize: 11.5, fontWeight: 600,
+                    flex: 1, padding: '4px 0', border: 'none', borderRadius: 6, cursor: 'pointer',
+                    fontSize: 11.5, fontWeight: 600, textAlign: 'center',
                     background: viewLevel === level ? '#0d9488' : 'transparent',
                     color: viewLevel === level ? '#fff' : '#64748b',
                     transition: 'all 0.15s',
