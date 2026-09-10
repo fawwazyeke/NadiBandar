@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Map as MapLibre, NavigationControl, LngLatBounds, GeoJSONSource, setWorkerUrl } from 'maplibre-gl';
-
-setWorkerUrl('/maplibre-gl-worker.mjs');
+import { Map as MapLibre, NavigationControl, LngLatBounds, GeoJSONSource } from 'maplibre-gl';
 import type { District, LayerId, ViewLevel } from '../types';
 import { getLayerScore, scoreColor } from '../data/scoring';
 import { aggregateByState } from '../data/aggregateByState';

@@ -5,7 +5,13 @@
       "name": "NadiBandar",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 5174
+      "port": 5173
+    },
+    {
+      "name": "NadiBandar Preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview"],
+      "port": 4173
     }
   ]
 }
