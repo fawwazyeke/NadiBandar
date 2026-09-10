@@ -54,8 +54,7 @@ export default function ChatPanel({ districts, selectedLayer, initialMessage, on
         layer: selectedLayer,
       };
 
-      const API_BASE = import.meta.env.VITE_API_URL ?? '';
-      const resp = await fetch(`${API_BASE}/api/chat`, {
+      const resp = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
