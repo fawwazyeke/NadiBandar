@@ -11,4 +11,14 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['maplibre-gl'],
   },
+  build: {
+    rollupOptions: {
+      external: ['maplibre-gl'],
+      output: {
+        globals: {
+          'maplibre-gl': 'maplibregl',
+        },
+      },
+    },
+  },
 })
