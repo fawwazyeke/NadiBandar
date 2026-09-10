@@ -189,7 +189,9 @@ const WEB_SEARCH_TOOL = {
 
 // ── Express app ─────────────────────────────────────────────────────
 const app = express();
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : '*' }));
+const corsOptions = { origin: process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : '*', methods: ['GET', 'POST', 'OPTIONS'], allowedHeaders: ['Content-Type'] };
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // handle preflight for all routes
 app.use(express.json({ limit: '2mb' }));
 
 app.post('/api/chat', async (req, res) => {
