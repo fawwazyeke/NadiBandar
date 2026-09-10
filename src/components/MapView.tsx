@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Map as MapLibre, NavigationControl, LngLatBounds, GeoJSONSource } from 'maplibre-gl';
+import { Map as MapLibre, NavigationControl, LngLatBounds, GeoJSONSource, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+
+// Point MapLibre at the worker file served from /public so Vite's production build doesn't lose it
+setWorkerUrl('/maplibre-gl-worker.mjs');
 import type { District, LayerId, ViewLevel } from '../types';
 import { getLayerScore, scoreColor } from '../data/scoring';
 import { aggregateByState } from '../data/aggregateByState';
