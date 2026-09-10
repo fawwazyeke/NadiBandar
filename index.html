@@ -7,6 +7,15 @@
     <title>Nadi Bandar · Urban Facility Gap Intelligence</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/maplibre-gl.css">
+    <!-- Tell the browser where to find maplibre-gl so bare specifier imports resolve -->
+    <script type="importmap">
+      {
+        "imports": {
+          "maplibre-gl": "/maplibre-gl.mjs",
+          "maplibre-gl/dist/maplibre-gl.css": "/maplibre-gl.css"
+        }
+      }
+    </script>
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       html, body, #root { height: 100%; overflow: hidden; }
@@ -15,8 +24,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Load MapLibre GL JS from /public to avoid Vite ESM bundling issues -->
-    <script type="module" src="/load-maplibre.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
