@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<title>Laporan Ringkasan Projek — Nadi Bandar</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Times New Roman", Georgia, serif;
+    font-size: 11pt; line-height: 1.5; color: #000; margin: 0;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  h1, h2, h3 { margin: 0; font-weight: bold; }
+  p { margin: 0 0 7px; text-align: justify; }
+  .page-break { page-break-before: always; }
+  .avoid { page-break-inside: avoid; }
+
+  /* Cover */
+  .cover { height: 245mm; display: flex; flex-direction: column; }
+  .cover-top { text-align: center; padding-top: 22mm; }
+  .cover-org { font-size: 11pt; letter-spacing: 0.5px; margin-bottom: 4mm; }
+  .cover-comp { font-size: 11.5pt; font-weight: bold; line-height: 1.5; margin-bottom: 26mm; }
+  .cover-doc { font-size: 10.5pt; letter-spacing: 2px; margin-bottom: 5mm; }
+  .cover-title { font-size: 30pt; font-weight: bold; letter-spacing: -0.5px; line-height: 1.15; }
+  .cover-sub { font-size: 12.5pt; margin-top: 4mm; font-style: italic; }
+  .cover-line { width: 60mm; height: 1.5pt; background: #000; margin: 8mm auto; }
+  .cover-bottom { margin-top: auto; }
+  .cover-tbl { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+  .cover-tbl td { padding: 4px 0; vertical-align: top; }
+  .cover-tbl td:first-child { width: 38mm; font-weight: bold; }
+
+  /* Sections */
+  h2.sec {
+    font-size: 12pt; text-transform: uppercase; letter-spacing: 0.6px;
+    border-bottom: 1.5pt solid #000; padding-bottom: 3px; margin: 0 0 8px;
+  }
+  h3.sub { font-size: 11pt; margin: 11px 0 4px; }
+  .sec-wrap { margin-bottom: 15px; }
+
+  ul, ol { margin: 4px 0 8px; padding-left: 18px; }
+  li { margin-bottom: 3px; }
+
+  table.d { width: 100%; border-collapse: collapse; margin: 7px 0; font-size: 9.5pt; }
+  table.d th {
+    background: #000; color: #fff; text-align: left; padding: 5px 7px;
+    font-weight: bold; font-size: 9pt; border: 0.5pt solid #000;
+  }
+  table.d td { padding: 4.5px 7px; border: 0.5pt solid #000; vertical-align: top; }
+  .rc { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cn { text-align: center; }
+
+  .formula {
+    border: 0.75pt solid #000; padding: 7px 11px; margin: 7px 0;
+    font-size: 10pt; text-align: center; font-family: Georgia, serif;
+  }
+  .cap { font-size: 8.5pt; font-style: italic; margin: 3px 0 9px; }
+  .footer {
+    margin-top: 18px; padding-top: 7px; border-top: 0.5pt solid #000;
+    font-size: 8.5pt; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-top">
+    <div class="cover-org">PENYERTAAN KATEGORI ORANG AWAM</div>
+    <div class="cover-comp">
+      PERTANDINGAN URBANMIND AI CHALLENGE<br>
+      SEMPENA SAMBUTAN HARI PERANCANGAN BANDAR SEDUNIA (HPBS) 2026<br>
+      PERINGKAT KEBANGSAAN
+    </div>
+
+    <div class="cover-doc">LAPORAN RINGKASAN PROJEK DAN PENYELESAIAN MASALAH</div>
+    <div class="cover-line"></div>
+    <div class="cover-title">NADI BANDAR</div>
+    <div class="cover-sub">Sistem Analisis Jurang Kemudahan Awam Berasaskan Kecerdasan Buatan</div>
+    <div class="cover-line"></div>
+  </div>
+
+  <div class="cover-bottom">
+    <table class="cover-tbl">
+      <tr><td>Ahli Pasukan</td><td>Aisyah Wahida<br>Ammar Haziq<br>Fawwaz Haziq</td></tr>
+      <tr><td>Skop Kajian</td><td>160 daerah pentadbiran di Malaysia</td></tr>
+      <tr><td>Pautan Prototaip</td><td>[URL PROTOTAIP]</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<div class="sec-wrap">
+  <h2 class="sec">1.0&nbsp;&nbsp;Pengenalan</h2>
+  <p>
+    Nadi Bandar ialah sistem analisis jurang kemudahan awam bagi 160 daerah di Malaysia.
+    Sistem membandingkan bilangan kemudahan sedia ada dengan keperluan penduduk mengikut
+    piawaian perancangan rasmi, lalu menjana skor kecukupan bagi setiap daerah.
+  </p>
+  <p>Sistem terdiri daripada tiga komponen:</p>
+  <ul>
+    <li>Peta koroplet interaktif bagi enam jenis kemudahan asas;</li>
+    <li>Panel analisis terperinci bagi setiap daerah;</li>
+    <li>Pembantu kecerdasan buatan yang menjawab pertanyaan berdasarkan data sebenar.</li>
+  </ul>
+</div>
+
+<div class="sec-wrap">
+  <h2 class="sec">2.0&nbsp;&nbsp;Pernyataan Masalah</h2>
+  <p>Perancangan kemudahan awam pada masa ini menghadapi tiga kekangan utama:</p>
+  <ol>
+    <li><strong>Data berselerak.</strong> Data banci, sosioekonomi dan lokasi kemudahan disimpan dalam portal dan format berbeza.</li>
+    <li><strong>Ketiadaan penanda aras seragam.</strong> Tanpa perbandingan terhadap piawaian, keutamaan daerah sukar ditentukan secara objektif.</li>
+    <li><strong>Halangan kepakaran.</strong> Analisis ruangan memerlukan kemahiran GIS yang terhad di kalangan pegawai dan orang awam.</li>
+  </ol>
+  <p>
+    Kesan kekangan tersebut ialah keputusan pembinaan kemudahan cenderung bersifat reaktif,
+    iaitu dilaksanakan selepas timbul aduan atau liputan media.
+  </p>
+</div>
+
+<div class="sec-wrap">
+  <h2 class="sec">3.0&nbsp;&nbsp;Objektif</h2>
+  <ol>
+    <li>Menyatukan data kemudahan, penduduk dan sosioekonomi bagi 160 daerah dalam satu pangkalan data.</li>
+    <li>Mengira skor kecukupan objektif berasaskan piawaian PLANMalaysia dan WHO.</li>
+    <li>Menyampaikan hasil analisis melalui antara muka yang tidak memerlukan kemahiran teknikal.</li>
+    <li>Mengesahkan ketepatan dapatan melalui semakan silang terhadap laporan media dan rekod rasmi.</li>
+  </ol>
+</div>
+
+<div class="sec-wrap avoid">
+  <h2 class="sec">4.0&nbsp;&nbsp;Metodologi</h2>
+
+  <h3 class="sub">4.1&nbsp;&nbsp;Sumber Data</h3>
+  <p>Kesemua data diperoleh daripada sumber rasmi dan terbuka. Tiada data sintetik digunakan.</p>
+  <table class="d">
+    <thead>
+      <tr><th style="width:30%">Sumber</th><th style="width:40%">Data Diambil</th><th>Kegunaan</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>DOSM Banci Penduduk 2020</td><td>Penduduk, isi rumah, struktur umur</td><td>Penyebut pengiraan keperluan</td></tr>
+      <tr><td>DOSM HIES 2024</td><td>Kadar kemiskinan, pendapatan penengah, Gini</td><td>Konteks sosioekonomi</td></tr>
+      <tr><td>OpenStreetMap</td><td>Lokasi enam jenis kemudahan</td><td>Kiraan kemudahan sedia ada</td></tr>
+      <tr><td>PLANMalaysia JPBD GP004-A 2022</td><td>Nisbah kemudahan per penduduk</td><td>Penanda aras kecukupan</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">4.2&nbsp;&nbsp;Formula Pengiraan</h3>
+  <div class="formula">
+    Keperluan = Penduduk &divide; Nisbah piawaian<br>
+    Skor = (Kemudahan sedia ada &divide; Keperluan) &times; 100
+  </div>
+  <p class="cap">
+    Skor 100 menandakan piawaian dipenuhi. Skor bawah 100 menandakan jurang; melebihi 100
+    menandakan lebihan perkhidmatan. Skor komposit ialah purata enam kategori, dengan setiap
+    kategori dihadkan pada 100 supaya lebihan tidak menutup kekurangan.
+  </p>
+
+  <h3 class="sub">4.3&nbsp;&nbsp;Piawaian Rujukan</h3>
+  <table class="d">
+    <thead><tr><th style="width:34%">Kemudahan</th><th class="cn" style="width:26%">Nisbah</th><th>Rujukan</th></tr></thead>
+    <tbody>
+      <tr><td>Hospital dan klinik</td><td class="cn">1 : 10,000</td><td>JPBD GP004-A 2022 / WHO</td></tr>
+      <tr><td>Sekolah</td><td class="cn">1 : 5,000</td><td>JPBD GP004-A 2022</td></tr>
+      <tr><td>Balai polis</td><td class="cn">1 : 10,000</td><td>JPBD GP004-A 2022</td></tr>
+      <tr><td>Pasar</td><td class="cn">1 : 10,000</td><td>JPBD GP004-A 2022</td></tr>
+      <tr><td>Farmasi</td><td class="cn">1 : 2,000</td><td>WHO</td></tr>
+      <tr><td>Hentian pengangkutan awam</td><td class="cn">1 : 5,000</td><td>JPBD GP004-A 2022</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="page-break"></div>
+
+<div class="sec-wrap avoid">
+  <h2 class="sec">5.0&nbsp;&nbsp;Ciri Sistem</h2>
+  <table class="d">
+    <thead><tr><th style="width:32%">Ciri</th><th>Keterangan</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Peta koroplet interaktif</td>
+        <td>Paparan 160 daerah mengikut skor kecukupan. Boleh ditukar antara peringkat negeri dan daerah, serta antara enam lapisan kemudahan.</td>
+      </tr>
+      <tr>
+        <td>Panel analisis daerah</td>
+        <td>Pecahan bilangan kemudahan, skor setiap kategori, jumlah kekurangan, dan penunjuk sosioekonomi bagi daerah yang dipilih.</td>
+      </tr>
+      <tr>
+        <td>Pembantu AI (RAG)</td>
+        <td>Rekod sebenar daerah diambil daripada pangkalan data sebelum dihantar kepada model bahasa sebagai konteks. Jawapan merujuk angka sebenar, bukan pengetahuan umum model.</td>
+      </tr>
+      <tr>
+        <td>Analisis semua daerah</td>
+        <td>Menjana senarai lima jurang paling kritikal di peringkat nasional beserta cadangan tindakan.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="sec-wrap avoid">
+  <h2 class="sec">6.0&nbsp;&nbsp;Dapatan</h2>
+
+  <h3 class="sub">6.1&nbsp;&nbsp;Daerah Paling Kritikal</h3>
+  <p class="cap">Berdasarkan skor komposit bagi 42 daerah berpenduduk melebihi 200,000 orang.</p>
+  <table class="d">
+    <thead>
+      <tr>
+        <th class="cn" style="width:6%">Bil.</th><th style="width:22%">Daerah</th><th style="width:15%">Negeri</th>
+        <th class="rc" style="width:16%">Penduduk</th><th class="cn" style="width:11%">Skor</th><th>Jurang Ketara</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="cn">1</td><td>Lahad Datu</td><td>Sabah</td><td class="rc">229,138</td><td class="cn">35</td><td>Hospital, balai polis</td></tr>
+      <tr><td class="cn">2</td><td>Pasir Mas</td><td>Kelantan</td><td class="rc">230,424</td><td class="cn">35</td><td>Pasar, hospital</td></tr>
+      <tr><td class="cn">3</td><td>Sibu</td><td>Sarawak</td><td class="rc">248,064</td><td class="cn">40</td><td>Pengangkutan awam</td></tr>
+      <tr><td class="cn">4</td><td>Tawau</td><td>Sabah</td><td class="rc">372,615</td><td class="cn">41</td><td>Hospital, pengangkutan</td></tr>
+      <tr><td class="cn">5</td><td>Perlis</td><td>Perlis</td><td class="rc">284,885</td><td class="cn">47</td><td>Pasar, hospital</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">6.2&nbsp;&nbsp;Jurang Mengikut Bilangan Mutlak</h3>
+  <p class="cap">
+    Daerah bandar di Lembah Klang mencatat jurang terbesar dari segi bilangan kemudahan
+    yang diperlukan, walaupun skor peratusannya lebih baik daripada daerah luar bandar.
+  </p>
+  <table class="d">
+    <thead>
+      <tr>
+        <th style="width:22%">Daerah</th><th style="width:20%">Kemudahan</th>
+        <th class="rc" style="width:15%">Sedia Ada</th><th class="rc" style="width:15%">Diperlukan</th>
+        <th class="rc" style="width:16%">Kekurangan</th><th class="cn">Skor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Petaling</td><td>Sekolah</td><td class="rc">227</td><td class="rc">460</td><td class="rc">233</td><td class="cn">49</td></tr>
+      <tr><td>Ulu Langat</td><td>Sekolah</td><td class="rc">132</td><td class="rc">281</td><td class="rc">149</td><td class="cn">47</td></tr>
+      <tr><td>Ulu Langat</td><td>Balai polis</td><td class="rc">15</td><td class="rc">141</td><td class="rc">126</td><td class="cn">11</td></tr>
+      <tr><td>Klang</td><td>Balai polis</td><td class="rc">16</td><td class="rc">109</td><td class="rc">93</td><td class="cn">15</td></tr>
+      <tr><td>Klang</td><td>Sekolah</td><td class="rc">131</td><td class="rc">218</td><td class="rc">87</td><td class="cn">60</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="sec-wrap avoid">
+  <h2 class="sec">7.0&nbsp;&nbsp;Pengesahan Silang</h2>
+  <p>
+    Setiap jurang utama disemak terhadap laporan media arus perdana dan rekod rasmi kerajaan.
+    Kesemua empat jurang yang diuji disahkan oleh sumber bebas.
+  </p>
+  <table class="d">
+    <thead>
+      <tr>
+        <th style="width:20%">Daerah / Kemudahan</th>
+        <th style="width:20%">Dapatan Sistem</th>
+        <th style="width:37%">Pengesahan Sumber Luar</th>
+        <th>Sumber</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Klang — Sekolah</td>
+        <td>Kurang 87 buah (skor 60)</td>
+        <td>Kesesakan SMK Meru, Klang menjadi tular. Bilangan pelajar Selangor meningkat tetapi hanya dua sekolah bertambah.</td>
+        <td>Sinar Harian; Sinar Bestari</td>
+      </tr>
+      <tr>
+        <td>Klang — Balai Polis</td>
+        <td>Kurang 93 buah (skor 15)</td>
+        <td>Pembinaan IPD Klang Utara (RM155 juta) dan Balai Polis Bukit Jelutong (RM55 juta) telah diluluskan.</td>
+        <td>Dewan Negeri Selangor</td>
+      </tr>
+      <tr>
+        <td>Lahad Datu — Hospital</td>
+        <td>Kurang 18 buah (skor 22)</td>
+        <td>Kekurangan Pegawai Perubatan di Hospital Lahad Datu diakui dan langkah segera diambil.</td>
+        <td>Sabah Media, Jun 2026</td>
+      </tr>
+      <tr>
+        <td>Sibu dan Miri — Pengangkutan</td>
+        <td>Skor 10 dan 22</td>
+        <td>Terminal Miri Sentral mula beroperasi Januari 2025; perkhidmatan bas pintar Miri terhad kepada 14 bas bagi 8 laluan.</td>
+        <td>TV Sarawak; MOT Sarawak</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Daerah yang dibenderakan sebagai kritikal oleh sistem merupakan daerah yang sedang
+    menerima perhatian dasar dan peruntukan kerajaan. Ini mengesahkan model skor berupaya
+    mengenal pasti keperluan sebenar secara automatik.
+  </p>
+</div>
+
+<div class="sec-wrap avoid">
+  <h2 class="sec">8.0&nbsp;&nbsp;Batasan Kajian</h2>
+  <ol>
+    <li>Kiraan kemudahan bergantung pada liputan OpenStreetMap, yang lebih lengkap di kawasan bandar berbanding luar bandar.</li>
+    <li>Kategori farmasi menunjukkan liputan tidak lengkap di beberapa daerah; skor kategori ini perlu ditafsir dengan berhati-hati.</li>
+    <li>Analisis berasaskan sempadan pentadbiran, belum mengambil kira jarak perjalanan sebenar penduduk ke kemudahan.</li>
+  </ol>
+  <h3 class="sub">Penambahbaikan Dirancang</h3>
+  <ol>
+    <li>Integrasi data pendaftaran rasmi KKM, KPM dan PDRM bagi menggantikan kiraan OpenStreetMap.</li>
+    <li>Analisis kebolehcapaian berasaskan jarak perjalanan sebenar.</li>
+    <li>Pemberat keutamaan mengikut kadar kemiskinan daerah.</li>
+    <li>Unjuran keperluan kemudahan berdasarkan pertumbuhan penduduk.</li>
+  </ol>
+</div>
+
+<div class="sec-wrap avoid">
+  <h2 class="sec">9.0&nbsp;&nbsp;Kesimpulan</h2>
+  <ol>
+    <li>Data kerajaan yang sedia terbuka, apabila disatukan dan diukur terhadap piawaian rasmi, mampu mendedahkan jurang kemudahan awam secara automatik merentasi seluruh negara.</li>
+    <li>Kesemua jurang utama yang dikenal pasti secara pengiraan telah disahkan oleh laporan media bebas atau rekod peruntukan rasmi, membuktikan ketepatan model.</li>
+    <li>Sistem berupaya mengenal pasti daerah bermasalah sebelum isu memerlukan tindakan tergempar, membolehkan perancangan berasaskan bukti.</li>
+    <li>Gabungan pemetaan interaktif dan pembantu AI membolehkan analisis diakses tanpa kepakaran GIS.</li>
+  </ol>
+</div>
+
+<div class="footer">
+  Nadi Bandar &mdash; UrbanMind AI Challenge, HPBS 2026 Peringkat Kebangsaan
+</div>
+
+</body>
+</html>

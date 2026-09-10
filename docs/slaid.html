@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<title>Slaid Pembentangan — Nadi Bandar</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .slide {
+    width: 1280px; height: 720px; position: relative; overflow: hidden;
+    page-break-after: always; background: #fff; color: #0f172a;
+    padding: 54px 66px; display: flex; flex-direction: column;
+  }
+  .slide:last-child { page-break-after: auto; }
+  .dark { background: #0f172a; color: #fff; }
+
+  .kicker { font-size: 12px; letter-spacing: 2.4px; text-transform: uppercase; color: #0d9488; font-weight: 700; margin-bottom: 12px; }
+  .dark .kicker { color: #2dd4bf; }
+  h2 { font-size: 36px; font-weight: 700; letter-spacing: -0.8px; line-height: 1.12; }
+  .rule { width: 56px; height: 4px; background: #0d9488; border-radius: 2px; margin-top: 18px; }
+  .body-area { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .pnum { position: absolute; bottom: 28px; right: 66px; font-size: 12px; color: #cbd5e1; font-weight: 600; }
+  .dark .pnum { color: #475569; }
+
+  /* Cover */
+  .cover-wrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .cover-title { font-size: 78px; font-weight: 700; letter-spacing: -2.8px; line-height: 1; }
+  .cover-tag { font-size: 21px; color: #2dd4bf; font-weight: 500; margin: 18px 0 46px; }
+  .cover-foot { display: flex; gap: 64px; border-top: 1px solid #1e293b; padding-top: 24px; }
+  .cf-l { font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; color: #475569; font-weight: 700; margin-bottom: 7px; }
+  .cf-v { font-size: 14px; color: #e2e8f0; line-height: 1.55; }
+
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card { background: #f8fafc; border-radius: 12px; padding: 26px 26px; border: 1px solid #e8edf3; }
+  .card .cn { font-size: 44px; font-weight: 700; color: #0d9488; line-height: 1; margin-bottom: 12px; letter-spacing: -1.6px; }
+  .card .ct { font-size: 19px; font-weight: 700; margin-bottom: 9px; }
+  .card .cb { font-size: 14.5px; color: #475569; line-height: 1.5; }
+
+  /* Big bullet lists */
+  .pts { list-style: none; }
+  .pts li { font-size: 19px; color: #1e293b; line-height: 1.45; margin-bottom: 21px; padding-left: 24px; position: relative; }
+  .pts li::before { content: ''; position: absolute; left: 0; top: 10px; width: 9px; height: 9px; border-radius: 50%; background: #0d9488; }
+  .pts strong { font-weight: 700; color: #0f172a; }
+  .pts.sm li { font-size: 16px; margin-bottom: 16px; padding-left: 20px; }
+  .pts.sm li::before { width: 7px; height: 7px; top: 8px; }
+
+  /* Screenshots */
+  .shot { flex: 1; display: flex; align-items: center; justify-content: center; margin-top: 18px; }
+  .shot img { max-width: 100%; max-height: 100%; border-radius: 9px; border: 1px solid #e2e8f0; }
+  .shot-side { display: grid; grid-template-columns: 1fr 330px; gap: 34px; flex: 1; align-items: center; margin-top: 16px; }
+  .shot-side img { width: 100%; border-radius: 9px; border: 1px solid #e2e8f0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th { background: #0f172a; color: #fff; text-align: left; padding: 12px 15px; font-size: 13px; font-weight: 700; }
+  td { padding: 11px 15px; border-bottom: 1px solid #eef2f7; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  .rc { text-align: right; font-variant-numeric: tabular-nums; }
+  .bad { color: #dc2626; font-weight: 700; }
+  .amb { color: #d97706; font-weight: 700; }
+
+  .vgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .v { border: 1px solid #e2e8f0; border-radius: 11px; padding: 20px 22px; }
+  .vt { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  .vd { font-size: 15px; color: #dc2626; font-weight: 600; margin-bottom: 7px; }
+  .vn { font-size: 14.5px; color: #475569; line-height: 1.45; }
+  .vsrc { font-size: 11.5px; color: #94a3b8; margin-top: 10px; font-style: italic; }
+
+  .closing li { font-size: 20px; color: #e2e8f0; line-height: 1.45; margin-bottom: 26px; padding-left: 34px; position: relative; list-style: none; }
+  .closing { counter-reset: c; }
+  .closing li::before {
+    counter-increment: c; content: counter(c); position: absolute; left: 0; top: 2px;
+    width: 24px; height: 24px; border-radius: 50%; background: #0d9488; color: #fff;
+    font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .url-box { margin-top: 14px; padding: 16px 22px; background: #1e293b; border-radius: 10px; border-left: 3px solid #2dd4bf; }
+  .url-box .l { font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; color: #475569; font-weight: 700; margin-bottom: 5px; }
+  .url-box .u { font-size: 18px; color: #2dd4bf; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- 1 -->
+<div class="slide dark">
+  <div class="cover-wrap">
+    <div class="rule" style="background:#2dd4bf;margin-top:0;margin-bottom:26px"></div>
+    <div class="cover-title">Nadi Bandar</div>
+    <div class="cover-tag">Analisis Jurang Kemudahan Awam Berkuasa AI</div>
+    <div class="cover-foot">
+      <div>
+        <div class="cf-l">Pertandingan</div>
+        <div class="cf-v">UrbanMind AI Challenge<br>Kategori Orang Awam · HPBS 2026</div>
+      </div>
+      <div>
+        <div class="cf-l">Ahli Pasukan</div>
+        <div class="cf-v">Aisyah Wahida · Ammar Haziq<br>Fawwaz Haziq</div>
+      </div>
+      <div>
+        <div class="cf-l">Prototaip</div>
+        <div class="cf-v">[URL PROTOTAIP]</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="slide">
+  <div class="kicker">Masalah</div>
+  <h2>Jurang dikesan selepas jadi isu</h2>
+  <div class="rule"></div>
+  <div class="body-area">
+    <div class="grid3">
+      <div class="card">
+        <div class="ct">Data berselerak</div>
+        <div class="cb">Banci, sosioekonomi dan lokasi kemudahan dalam portal berbeza.</div>
+      </div>
+      <div class="card">
+        <div class="ct">Tiada penanda aras</div>
+        <div class="cb">Keutamaan daerah sukar ditentukan secara objektif.</div>
+      </div>
+      <div class="card">
+        <div class="ct">Halangan kepakaran</div>
+        <div class="cb">Analisis ruangan memerlukan kemahiran GIS.</div>
+      </div>
+    </div>
+    <ul class="pts" style="margin-top:44px">
+      <li>Keputusan pembinaan kemudahan bersifat <strong>reaktif</strong> — selepas aduan atau liputan media.</li>
+    </ul>
+  </div>
+  <div class="pnum">2</div>
+</div>
+
+<!-- 3 -->
+<div class="slide">
+  <div class="kicker">Penyelesaian</div>
+  <h2>Satu platform, tiga keupayaan</h2>
+  <div class="rule"></div>
+  <div class="body-area">
+    <div class="grid3">
+      <div class="card">
+        <div class="cn">160</div>
+        <div class="ct">Peta jurang</div>
+        <div class="cb">Skor 0–100 bagi setiap daerah, enam jenis kemudahan.</div>
+      </div>
+      <div class="card">
+        <div class="cn">AI</div>
+        <div class="ct">Pembantu RAG</div>
+        <div class="cb">Menjawab daripada rekod sebenar pangkalan data.</div>
+      </div>
+      <div class="card">
+        <div class="cn">4</div>
+        <div class="ct">Disahkan berita</div>
+        <div class="cb">Semakan silang dengan media dan rekod rasmi.</div>
+      </div>
+    </div>
+  </div>
+  <div class="pnum">3</div>
+</div>
+
+<!-- 4 -->
+<div class="slide">
+  <div class="kicker">Metodologi</div>
+  <h2>Data rasmi, piawaian rasmi</h2>
+  <div class="rule"></div>
+  <div class="body-area">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:start">
+      <div>
+        <table>
+          <thead><tr><th>Sumber Data</th></tr></thead>
+          <tbody>
+            <tr><td>DOSM Banci 2020</td></tr>
+            <tr><td>DOSM HIES 2024</td></tr>
+            <tr><td>OpenStreetMap</td></tr>
+            <tr><td>PLANMalaysia GP004-A 2022</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:26px;background:#f0fdfa;border-left:3px solid #0d9488;padding:18px 20px;border-radius:0 8px 8px 0">
+          <div style="font-size:12.5px;color:#0f766e;font-weight:700;letter-spacing:1px;margin-bottom:9px">FORMULA</div>
+          <div style="font-size:15.5px;color:#134e4a;line-height:1.8">
+            Keperluan = Penduduk &divide; Nisbah<br>
+            Skor = (Sedia ada &divide; Keperluan) &times; 100
+          </div>
+        </div>
+      </div>
+      <div>
+        <table>
+          <thead><tr><th>Kemudahan</th><th class="rc">Nisbah</th></tr></thead>
+          <tbody>
+            <tr><td>Hospital dan klinik</td><td class="rc">1 : 10,000</td></tr>
+            <tr><td>Sekolah</td><td class="rc">1 : 5,000</td></tr>
+            <tr><td>Balai polis</td><td class="rc">1 : 10,000</td></tr>
+            <tr><td>Pasar</td><td class="rc">1 : 10,000</td></tr>
+            <tr><td>Farmasi</td><td class="rc">1 : 2,000</td></tr>
+            <tr><td>Hentian pengangkutan</td><td class="rc">1 : 5,000</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="pnum">4</div>
+</div>
+
+<!-- 5 -->
+<div class="slide">
+  <div class="kicker">Prototaip</div>
+  <h2>Peta koroplet interaktif</h2>
+  <div class="shot"><img src="shots/01-peta-hospital.png" alt="Peta liputan hospital"></div>
+  <div class="pnum">5</div>
+</div>
+
+<!-- 6 -->
+<div class="slide">
+  <div class="kicker">Prototaip</div>
+  <h2>Pecahan setiap daerah</h2>
+  <div class="shot-side">
+    <img src="shots/04-daerah-dipilih.png" alt="Analisis daerah Petaling">
+    <ul class="pts sm">
+      <li><strong>Petaling, Selangor</strong> — 2.3 juta penduduk, skor 78/100.</li>
+      <li><strong>Sekolah 49/100</strong> — perlu 233 lagi.</li>
+      <li><strong>Balai polis 20/100</strong> — perlu 184 lagi.</li>
+      <li>Hospital dan pasar <strong>melebihi piawaian</strong>.</li>
+      <li>Jurang bersifat khusus mengikut sektor.</li>
+    </ul>
+  </div>
+  <div class="pnum">6</div>
+</div>
+
+<!-- 7 -->
+<div class="slide">
+  <div class="kicker">Prototaip</div>
+  <h2>Pembantu AI berasaskan data</h2>
+  <div class="shot-side">
+    <img src="shots/05-ai-chat.png" alt="Pembantu AI Nadi Bandar">
+    <ul class="pts sm">
+      <li>Mengesan daerah dan kemudahan dalam soalan.</li>
+      <li>Rekod sebenar diambil <strong>sebelum</strong> dihantar kepada model.</li>
+      <li>Jawapan merujuk <strong>angka sebenar</strong>.</li>
+      <li>Bahasa Melayu dan Inggeris.</li>
+    </ul>
+  </div>
+  <div class="pnum">7</div>
+</div>
+
+<!-- 8 -->
+<div class="slide">
+  <div class="kicker">Dapatan</div>
+  <h2>Daerah paling kritikal</h2>
+  <div class="rule"></div>
+  <div class="body-area">
+    <table>
+      <thead>
+        <tr><th style="width:24%">Daerah</th><th style="width:16%">Negeri</th>
+        <th class="rc" style="width:17%">Penduduk</th><th class="rc" style="width:12%">Skor</th>
+        <th>Jurang Ketara</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Lahad Datu</strong></td><td>Sabah</td><td class="rc">229,138</td><td class="rc bad">35</td><td>Hospital, balai polis</td></tr>
+        <tr><td><strong>Pasir Mas</strong></td><td>Kelantan</td><td class="rc">230,424</td><td class="rc bad">35</td><td>Pasar, hospital</td></tr>
+        <tr><td><strong>Sibu</strong></td><td>Sarawak</td><td class="rc">248,064</td><td class="rc bad">40</td><td>Pengangkutan awam</td></tr>
+        <tr><td><strong>Tawau</strong></td><td>Sabah</td><td class="rc">372,615</td><td class="rc bad">41</td><td>Hospital, pengangkutan</td></tr>
+        <tr><td><strong>Perlis</strong></td><td>Perlis</td><td class="rc">284,885</td><td class="rc amb">47</td><td>Pasar, hospital</td></tr>
+      </tbody>
+    </table>
+    <ul class="pts sm" style="margin-top:26px">
+      <li>Lembah Klang: jurang terbesar pada <strong>bilangan mutlak</strong> — Petaling perlu 233 sekolah, Ulu Langat 149.</li>
+    </ul>
+  </div>
+  <div class="pnum">8</div>
+</div>
+
+<!-- 9 -->
+<div class="slide">
+  <div class="kicker">Pengesahan</div>
+  <h2>Dapatan sepadan dengan laporan sebenar</h2>
+  <div class="rule"></div>
+  <div class="body-area">
+    <div class="vgrid">
+      <div class="v">
+        <div class="vt">Klang — Sekolah</div>
+        <div class="vd">Kurang 87 buah · skor 60</div>
+        <div class="vn">SMK Meru terlalu padat. Pelajar meningkat, hanya dua sekolah bertambah.</div>
+        <div class="vsrc">Sinar Harian · Sinar Bestari</div>
+      </div>
+      <div class="v">
+        <div class="vt">Klang — Balai Polis</div>
+        <div class="vd">Kurang 93 buah · skor 15</div>
+        <div class="vn">IPD Klang Utara RM155 juta dan Balai Polis Bukit Jelutong RM55 juta diluluskan.</div>
+        <div class="vsrc">Dewan Negeri Selangor</div>
+      </div>
+      <div class="v">
+        <div class="vt">Lahad Datu — Hospital</div>
+        <div class="vd">Kurang 18 buah · skor 22</div>
+        <div class="vn">Kekurangan Pegawai Perubatan diakui; langkah segera diambil.</div>
+        <div class="vsrc">Sabah Media, Jun 2026</div>
+      </div>
+      <div class="v">
+        <div class="vt">Sibu &amp; Miri — Pengangkutan</div>
+        <div class="vd">Skor 10 dan 22</div>
+        <div class="vn">Miri Sentral baru buka 2025. Bas pintar Miri hanya 14 buah, 8 laluan.</div>
+        <div class="vsrc">TV Sarawak · MOT Sarawak</div>
+      </div>
+    </div>
+  </div>
+  <div class="pnum">9</div>
+</div>
+
+<!-- 10 -->
+<div class="slide dark">
+  <div class="kicker">Kesimpulan</div>
+  <h2 style="color:#fff">Daripada reaktif kepada proaktif</h2>
+  <div class="rule" style="background:#2dd4bf"></div>
+  <div class="body-area">
+    <ul class="closing">
+      <li>Data terbuka kerajaan mampu mendedahkan jurang kemudahan secara automatik.</li>
+      <li>Setiap dapatan disahkan oleh media bebas atau rekod peruntukan rasmi.</li>
+      <li>Daerah bermasalah dikenal pasti <strong style="color:#2dd4bf">sebelum</strong> menjadi isu tergempar.</li>
+    </ul>
+    <div class="url-box">
+      <div class="l">Prototaip</div>
+      <div class="u">[URL PROTOTAIP]</div>
+    </div>
+  </div>
+  <div class="pnum">10</div>
+</div>
+
+</body>
+</html>
