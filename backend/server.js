@@ -189,9 +189,14 @@ const WEB_SEARCH_TOOL = {
 
 // ── Express app ─────────────────────────────────────────────────────
 const app = express();
-const corsOptions = { origin: process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : '*', methods: ['GET', 'POST', 'OPTIONS'], allowedHeaders: ['Content-Type'] };
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // handle preflight for all routes
+// Explicit CORS — handles Railway reverse proxy stripping cors() preflight
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
 app.use(express.json({ limit: '2mb' }));
 
 app.post('/api/chat', async (req, res) => {
